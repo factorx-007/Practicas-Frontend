@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
-import { ArrowRight, Users, CheckCircle2 } from 'lucide-react';
+import { ArrowRight, Rocket, Users, Building2, Sparkles, CheckCircle2 } from 'lucide-react';
 
 export default function LandingPage() {
   return (
@@ -59,19 +59,7 @@ export default function LandingPage() {
       {/* Hero Section */}
       <main className="relative z-10 container mx-auto px-6 pt-12 md:pt-24 pb-32 flex flex-col items-center text-center">
 
-        {/* Badge */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#231F20]/80 border border-slate-800 backdrop-blur-md mb-8 hover:border-[#00AEFF]/50 transition-colors cursor-default"
-        >
-          <span className="relative flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#00AEFF] opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-[#00AEFF]"></span>
-          </span>
-          <span className="text-xs font-medium text-[#00AEFF] tracking-wide uppercase">La plataforma #1 de gestión de talento</span>
-        </motion.div>
+
 
         {/* Headline */}
         <motion.h1
