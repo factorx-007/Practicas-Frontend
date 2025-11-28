@@ -10,7 +10,7 @@ const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
   title: 'ProTalent',
-  description: 'Plataforma de empleabilidad para estudiantes'
+  description: 'Plataforma de empleabilidad para estudiantes',
 }
 
 export default function RootLayout({
@@ -20,7 +20,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="es" suppressHydrationWarning>
-      <body 
+      <body
         className={`${inter.className} antialiased`}
         suppressHydrationWarning={true} // Ignorar atributos inyectados por extensiones en el cliente
       >
