@@ -36,17 +36,21 @@ export function middleware(request: NextRequest) {
   const accessToken = request.cookies.get('accessToken')?.value;
   const refreshToken = request.cookies.get('refreshToken')?.value;
 
+  console.log(`🛡️ [Middleware] Path: ${pathname} | AccessToken: ${!!accessToken} | RefreshToken: ${!!refreshToken}`);
+
   const isAuthRoute = AUTH_PREFIXES.some(prefix => pathname.startsWith(prefix));
   const isProtectedRoute = PROTECTED_PREFIXES.some(prefix => pathname.startsWith(prefix));
-  
+
   // For protected routes, be very permissive - only block if absolutely no cookies
   if (isProtectedRoute) {
     // Only redirect if absolutely no cookies at all
     if (!accessToken && !refreshToken) {
+      console.log(`🚫 [Middleware] Blocking protected route ${pathname} - No tokens found`);
       const loginUrl = new URL('/auth/login', request.url);
       loginUrl.searchParams.set('redirect', pathname);
       return NextResponse.redirect(loginUrl);
     }
+    console.log(`✅ [Middleware] Allowing protected route ${pathname}`);
 
     // If we have any cookies, let the component handle the verification
     return NextResponse.next();
@@ -57,6 +61,7 @@ export function middleware(request: NextRequest) {
     const hasSessionCookies = hasCookieSession(accessToken, refreshToken);
     if (hasSessionCookies) {
       // Quick check - if has cookies, likely authenticated
+      console.log(`Example: [Middleware] Redirecting from auth route ${pathname} to dashboard`);
       return NextResponse.redirect(new URL('/dashboard', request.url));
     }
   }

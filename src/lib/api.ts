@@ -12,6 +12,8 @@ const apiClient: AxiosInstance = axios.create({
   withCredentials: true, // Enable sending cookies with requests
 });
 
+console.log('🔌 [API] Initialized with Base URL:', API_BASE_URL);
+
 // Auth Manager Class - Updated for HTTP-only cookies
 export class AuthManager {
   // Authentication state management
@@ -124,7 +126,7 @@ export class ApiClient {
   ): Promise<ApiResponse<T>> {
     console.log(`🌐 API ${method} request to:`, url);
     console.log('🌐 Request data:', data);
-    
+
     try {
       const response = await apiClient.request({
         method,

@@ -174,11 +174,11 @@ export const useAuthStore = create<AuthState>()(
 
             if (response.success && response.data) {
               console.log('🔍 [authStore] Raw API response.data:', response.data);
-              
+
               // The API returns a nested structure with 'usuario' property
               // Extract the user object properly
               let userToSet: UserProfile;
-              
+
               if ('usuario' in response.data && response.data.usuario) {
                 // Response has nested usuario object
                 userToSet = response.data.usuario as UserProfile;
@@ -191,7 +191,7 @@ export const useAuthStore = create<AuthState>()(
                 console.error('❌ [authStore] Unexpected response structure:', response.data);
                 return;
               }
-              
+
               set({ user: userToSet });
 
               // Update localStorage
@@ -241,7 +241,7 @@ export const useAuthStore = create<AuthState>()(
                     if ('usuario' in userFromStorage && userFromStorage.usuario && userFromStorage.usuario.id) {
                       userToSet = userFromStorage.usuario;
                       console.log('✅ [authStore] Found nested user in storage:', userToSet.nombre, userToSet.apellido);
-                    } 
+                    }
                     // Handle direct user object - check for required UserProfile properties
                     else if ('id' in userFromStorage && userFromStorage.id && 'email' in userFromStorage && userFromStorage.email && 'nombre' in userFromStorage && 'apellido' in userFromStorage) {
                       userToSet = userFromStorage as UserProfile;
@@ -270,7 +270,7 @@ export const useAuthStore = create<AuthState>()(
             }
 
             // Then check with server
-            console.log('🔐 [authStore] Checking authentication with server');
+            console.log('🔐 [authStore] Checking authentication with server...');
             const isAuthenticated = await AuthManager.checkAuth();
             console.log('🔐 [authStore] Server auth check result:', isAuthenticated);
 
@@ -282,7 +282,10 @@ export const useAuthStore = create<AuthState>()(
               console.log('✅ [authStore] Auth initialization complete');
             } else {
               // Not authenticated according to server, clear everything
-              console.log('❌ [authStore] Not authenticated, clearing everything');
+              console.warn('❌ [authStore] Server rejected authentication (checkAuth returned false)');
+              console.warn('❌ [authStore] This usually means cookies are missing or invalid.');
+              console.warn('❌ [authStore] Clearing local session...');
+
               AuthManager.clearTokens();
               set({
                 user: null,
@@ -384,7 +387,7 @@ if (typeof window !== 'undefined') {
       }
     }
   );
-  
+
   // Small delay to ensure the store is fully initialized
   setTimeout(() => {
     useAuthStore.getState().initializeAuth();
