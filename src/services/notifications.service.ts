@@ -9,7 +9,7 @@ export interface Notification {
     leida: boolean;
     fechaCreacion: string;
     fechaActualizacion: string;
-    metadata?: any;
+    metadata?: unknown;
     actionUrl?: string; // Helper for frontend navigation
 }
 

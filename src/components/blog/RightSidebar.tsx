@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Bell, Zap, MessageCircle, Users, Briefcase, Plus, Filter, Loader2, Check } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { toast } from 'sonner';
 
 import ChatUsersHighlights from './ChatUsersHighlights';
 import AvailableUsersList from './AvailableUsersList';
@@ -32,7 +31,7 @@ const RightSidebar: React.FC<RightSidebarProps> = ({ isOpen, onClose, onOpenFilt
     setIsLoadingNotifications(true);
     try {
       const response = await notificationsService.getMyNotifications({ limit: 5 });
-      setNotifications(response.notificaciones);
+      setNotifications(response?.notificaciones || []);
     } catch (error) {
       console.error('Error fetching notifications:', error);
     } finally {

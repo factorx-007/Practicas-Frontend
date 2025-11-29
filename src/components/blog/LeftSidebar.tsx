@@ -1,7 +1,7 @@
 'use client';
 
 import { useAuthStore } from '@/store/authStore';
-import { User, MapPin, Link as LinkIcon, Briefcase, Bookmark } from 'lucide-react';
+import { User, MapPin, Briefcase, Bookmark } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 

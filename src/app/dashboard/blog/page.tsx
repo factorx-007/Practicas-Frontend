@@ -3,8 +3,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   BookOpen,
-  Plus,
-  Filter,
   ChevronLeft,
   Loader2
 } from 'lucide-react';
