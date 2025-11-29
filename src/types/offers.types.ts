@@ -38,7 +38,7 @@ export interface Offer {
   createdAt: string;
   updatedAt: string;
   vistas?: number;
-  
+
   empresa: CompanyInfoForOffer; // Relación con la empresa
   _count?: { // Para el conteo de postulaciones si es necesario
     postulaciones: number;
@@ -74,4 +74,11 @@ export interface PaginatedOffersResponse {
     hasNextPage: boolean;
     hasPrevPage: boolean;
   };
+}
+
+export interface CompanyStats {
+  ofertas_activas: number;
+  postulaciones_recibidas: number;
+  candidatos_entrevistados: number;
+  rating_empresa: number;
 }

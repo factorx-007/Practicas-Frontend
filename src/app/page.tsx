@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
-import { ArrowRight, Rocket, Users, Building2, Sparkles, CheckCircle2 } from 'lucide-react';
+import { ArrowRight, Users, CheckCircle2 } from 'lucide-react';
 
 export default function LandingPage() {
   return (

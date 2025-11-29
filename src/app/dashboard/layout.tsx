@@ -18,6 +18,23 @@ export default function DashboardLayout({
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [initialLoad, setInitialLoad] = useState(true);
 
+  // Handle responsive sidebar
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 1024) {
+        setSidebarOpen(false);
+      } else {
+        setSidebarOpen(true);
+      }
+    };
+
+    // Set initial state
+    handleResize();
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   useEffect(() => {
     // Only check for redirect after initial load and not loading
     if (!isLoading && initialLoad) {
@@ -58,7 +75,10 @@ export default function DashboardLayout({
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <DashboardSidebar isVisible={sidebarOpen} />
+      <DashboardSidebar
+        isVisible={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+      />
 
       {/* Main content area */}
       <div className={`transition-all duration-300 ${sidebarOpen ? 'lg:pl-72' : 'lg:pl-0'}`}>

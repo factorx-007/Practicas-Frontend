@@ -1,7 +1,7 @@
 import { api } from '@/lib/api';
 import { API_ENDPOINTS } from '@/constants';
 import { ApiResponse } from '@/types/common';
-import { OfferSearchFilters, PaginatedOffersResponse, OfferWithDetails } from '@/types/offers.types';
+import { OfferSearchFilters, PaginatedOffersResponse, OfferWithDetails, CompanyStats } from '@/types/offers.types';
 
 export class OffersService {
   static async searchOffers(
@@ -27,6 +27,10 @@ export class OffersService {
 
   static async getOfferById(offerId: string): Promise<ApiResponse<OfferWithDetails>> {
     return api.get<OfferWithDetails>(`${API_ENDPOINTS.OFFERS.BASE}/${offerId}`);
+  }
+
+  static async getCompanyStats(): Promise<ApiResponse<CompanyStats>> {
+    return api.get<CompanyStats>(`${API_ENDPOINTS.OFFERS.BASE}/company/stats`);
   }
 }
 

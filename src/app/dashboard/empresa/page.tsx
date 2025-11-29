@@ -19,18 +19,22 @@ import {
   User,
   MoreHorizontal
 } from 'lucide-react';
-import { mockDashboardStats, mockRecentActivity, upcomingEvents } from '@/data/dashboard';
+import { mockDashboardStats, upcomingEvents } from '@/data/dashboard';
+import { useQuery } from '@tanstack/react-query';
+import { OffersService } from '@/services/offers.service';
+import { notificationsService, Notification } from '@/services/notifications.service';
+import Link from 'next/link';
 
 // Helper function to format recent activity time
 const formatTimeAgo = (dateString: string) => {
   const date = new Date(dateString);
   const now = new Date();
-  const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
-  
-  if (diffInHours < 1) return 'Hace unos minutos';
-  if (diffInHours < 24) return `Hace ${diffInHours}h`;
-  if (diffInHours < 48) return 'Ayer';
-  return `Hace ${Math.floor(diffInHours / 24)} días`;
+  const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
+
+  if (diffInMinutes < 1) return 'Hace unos minutos';
+  if (diffInMinutes < 60) return `Hace ${diffInMinutes}m`;
+  if (diffInMinutes < 1440) return `Hace ${Math.floor(diffInMinutes / 60)}h`;
+  return `Hace ${Math.floor(diffInMinutes / 1440)}d`;
 };
 
 // Stat Card Component
@@ -101,7 +105,7 @@ function QuickAction({ title, description, href, icon: Icon, color }: QuickActio
   };
 
   return (
-    <a
+    <Link
       href={href}
       className={`group flex items-center p-4 bg-white rounded-xl border border-gray-200 hover:shadow-md transition-all duration-200 ${colorClasses[color]}`}
     >
@@ -117,28 +121,31 @@ function QuickAction({ title, description, href, icon: Icon, color }: QuickActio
         </div>
         <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-current transition-colors duration-200" />
       </div>
-    </a>
+    </Link>
   );
 }
 
 export default function EmpresaDashboard() {
-  const { user, isLoading } = useAuth(); // user es UserProfile | null
+  const { user, isLoading } = useAuth();
   const [isClient, setIsClient] = useState(false);
 
-  console.log('[EMPRESA_DASHBOARD] 🏗️ Dashboard component rendered - User:', !!user, 'Loading:', isLoading);
+  const { data: statsResponse, isLoading: isLoadingStats } = useQuery({
+    queryKey: ['companyStats'],
+    queryFn: () => OffersService.getCompanyStats(),
+    enabled: !!user && user.rol === 'EMPRESA'
+  });
+
+  const { data: notificationsResponse, isLoading: isLoadingNotifications } = useQuery({
+    queryKey: ['companyNotifications'],
+    queryFn: () => notificationsService.getMyNotifications({ limit: 5 }),
+    enabled: !!user && user.rol === 'EMPRESA'
+  });
 
   useEffect(() => {
     setIsClient(true);
   }, []);
 
-  useEffect(() => {
-    const userRole = user?.rol; // Eliminar as any y tipo
-    console.log('[EMPRESA_DASHBOARD] 👤 User effect triggered - User:', user?.email || 'No user', 'Role:', userRole);
-    console.log('[EMPRESA_DASHBOARD] 🔍 Full user object:', user);
-  }, [user]);
-
-  // Show loading spinner during initial load
-  if (isLoading) {
+  if (isLoading || (isLoadingStats && !!user)) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
@@ -146,7 +153,6 @@ export default function EmpresaDashboard() {
     );
   }
 
-  // Prevent hydration mismatch by not rendering until client-side
   if (!isClient) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -155,17 +161,15 @@ export default function EmpresaDashboard() {
     );
   }
 
-  console.log('[EMPRESA_DASHBOARD] 🎯 Rendering dashboard content for user:', user?.email || 'No user');
-
   const getWelcomeMessage = () => {
     const hour = new Date().getHours();
     const greeting = hour < 12 ? 'Buenos días' : hour < 18 ? 'Buenas tardes' : 'Buenas noches';
-    const userName = user?.nombre || 'Usuario'; // Eliminar as any
+    const userName = user?.nombre || 'Usuario';
     return `${greeting}, ${userName}`;
   };
 
   const getCompanyStats = () => {
-    const stats = mockDashboardStats.EMPRESA;
+    const stats = statsResponse?.data || mockDashboardStats.EMPRESA;
 
     return [
       { title: 'Ofertas Activas', value: stats.ofertas_activas || 0, subtitle: 'Publicadas', icon: Briefcase, color: 'blue' as const, trend: { value: 12, isPositive: true } },
@@ -177,33 +181,33 @@ export default function EmpresaDashboard() {
 
   const stats = getCompanyStats();
 
-  // Company quick actions
+  // Company quick actions with REAL routes
   const quickActions = [
     {
       title: 'Publicar Nueva Oferta',
       description: 'Crear y publicar una nueva vacante',
-      href: '/offers/create',
+      href: '/dashboard/empresa/offers/create',
       icon: Plus,
       color: 'blue' as const
     },
     {
       title: 'Gestionar Candidatos',
       description: 'Revisar postulaciones y candidatos',
-      href: '/candidates',
+      href: '/dashboard/empresa/candidates',
       icon: Users,
       color: 'green' as const
     },
     {
-      title: 'Programar Entrevistas',
-      description: 'Coordinar entrevistas con candidatos',
-      href: '/interviews',
-      icon: Calendar,
+      title: 'Mis Ofertas',
+      description: 'Ver y editar ofertas publicadas',
+      href: '/dashboard/empresa/offers/my-offers',
+      icon: Briefcase,
       color: 'purple' as const
     },
     {
       title: 'Analizar Métricas',
       description: 'Ver reportes de reclutamiento',
-      href: '/analytics',
+      href: '/dashboard/empresa/analytics',
       icon: BarChart3,
       color: 'orange' as const
     }
@@ -212,23 +216,22 @@ export default function EmpresaDashboard() {
   // Get icon for activity type
   const getActivityIcon = (tipo: string) => {
     switch (tipo) {
-      case 'postulacion': return Users;
-      case 'entrevista': return Calendar;
-      case 'oferta': return Briefcase;
-      case 'mensaje': return MessageSquare;
-      case 'candidato': return User;
-      case 'contratacion': return CheckCircle;
+      case 'POSTULACION': return Users;
+      case 'ENTREVISTA': return Calendar;
+      case 'NUEVA_OFERTA': return Briefcase;
+      case 'MENSAJE': return MessageSquare;
+      case 'CANDIDATO': return User;
+      case 'CONTRATACION': return CheckCircle;
       default: return Bell;
     }
   };
 
-  // Get icon color for activity state
-  const getActivityColor = (estado?: string) => {
-    switch (estado) {
-      case 'success': return 'bg-green-100 text-green-600';
-      case 'warning': return 'bg-yellow-100 text-yellow-600';
-      case 'error': return 'bg-red-100 text-red-600';
-      case 'info': return 'bg-blue-100 text-blue-600';
+  // Get icon color for activity state (using notification type as proxy for now)
+  const getActivityColor = (tipo: string) => {
+    switch (tipo) {
+      case 'POSTULACION': return 'bg-green-100 text-green-600';
+      case 'NUEVA_OFERTA': return 'bg-blue-100 text-blue-600';
+      case 'MENSAJE': return 'bg-purple-100 text-purple-600';
       default: return 'bg-gray-100 text-gray-600';
     }
   };
@@ -277,34 +280,42 @@ export default function EmpresaDashboard() {
             </div>
           </div>
 
-          {/* Recent Activity */}
+          {/* Recent Activity (Using Real Notifications) */}
           <div className="bg-white rounded-xl border border-gray-200 p-6">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-bold text-gray-900">Actividad Reciente</h2>
-              <a href="/activity" className="text-sm text-blue-600 hover:text-blue-800 font-medium">
+              <Link href="/dashboard/notifications" className="text-sm text-blue-600 hover:text-blue-800 font-medium">
                 Ver todo
-              </a>
+              </Link>
             </div>
 
             <div className="space-y-4">
-              {mockRecentActivity.slice(0, 5).map((activity) => {
-                const ActivityIcon = getActivityIcon(activity.tipo);
-                return (
-                  <div key={activity.id} className="flex items-start space-x-3 p-3 hover:bg-gray-50 rounded-lg transition-colors duration-200">
-                    <div className={`p-2 rounded-lg ${getActivityColor(activity.estado)}`}>
-                      <ActivityIcon className="w-4 h-4" />
+              {isLoadingNotifications ? (
+                <div className="flex justify-center py-4">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                </div>
+              ) : notificationsResponse?.notificaciones && notificationsResponse.notificaciones.length > 0 ? (
+                notificationsResponse.notificaciones.map((notification: Notification) => {
+                  const ActivityIcon = getActivityIcon(notification.tipo);
+                  return (
+                    <div key={notification.id} className="flex items-start space-x-3 p-3 hover:bg-gray-50 rounded-lg transition-colors duration-200">
+                      <div className={`p-2 rounded-lg ${getActivityColor(notification.tipo)}`}>
+                        <ActivityIcon className="w-4 h-4" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900">{notification.titulo}</p>
+                        <p className="text-sm text-gray-600 mt-1">{notification.mensaje}</p>
+                        <p className="text-xs text-gray-500 mt-2">{formatTimeAgo(notification.fechaCreacion)}</p>
+                      </div>
+                      <button className="text-gray-400 hover:text-gray-600">
+                        <MoreHorizontal className="w-4 h-4" />
+                      </button>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900">{activity.titulo}</p>
-                      <p className="text-sm text-gray-600 mt-1">{activity.descripcion}</p>
-                      <p className="text-xs text-gray-500 mt-2">{activity.fecha ? formatTimeAgo(activity.fecha) : 'Hace unos minutos'}</p>
-                    </div>
-                    <button className="text-gray-400 hover:text-gray-600">
-                      <MoreHorizontal className="w-4 h-4" />
-                    </button>
-                  </div>
-                );
-              })}
+                  );
+                })
+              ) : (
+                <p className="text-center text-gray-500 py-4">No hay actividad reciente</p>
+              )}
             </div>
           </div>
 
@@ -312,26 +323,26 @@ export default function EmpresaDashboard() {
           <div className="bg-white rounded-xl border border-gray-200 p-6">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-bold text-gray-900">Pipeline de Candidatos</h2>
-              <a href="/candidates" className="text-sm text-blue-600 hover:text-blue-800 font-medium">
+              <Link href="/dashboard/empresa/candidates" className="text-sm text-blue-600 hover:text-blue-800 font-medium">
                 Ver todos
-              </a>
+              </Link>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div className="text-center p-4 bg-blue-50 rounded-lg">
-                <div className="text-2xl font-bold text-blue-600">24</div>
+                <div className="text-2xl font-bold text-blue-600">{statsResponse?.data?.postulaciones_recibidas || 0}</div>
                 <div className="text-sm text-gray-600">Nuevas Postulaciones</div>
               </div>
               <div className="text-center p-4 bg-yellow-50 rounded-lg">
-                <div className="text-2xl font-bold text-yellow-600">12</div>
+                <div className="text-2xl font-bold text-yellow-600">0</div>
                 <div className="text-sm text-gray-600">En Revisión</div>
               </div>
               <div className="text-center p-4 bg-purple-50 rounded-lg">
-                <div className="text-2xl font-bold text-purple-600">8</div>
+                <div className="text-2xl font-bold text-purple-600">{statsResponse?.data?.candidatos_entrevistados || 0}</div>
                 <div className="text-sm text-gray-600">Entrevistas</div>
               </div>
               <div className="text-center p-4 bg-green-50 rounded-lg">
-                <div className="text-2xl font-bold text-green-600">3</div>
+                <div className="text-2xl font-bold text-green-600">0</div>
                 <div className="text-sm text-gray-600">Por Contratar</div>
               </div>
             </div>
@@ -371,9 +382,9 @@ export default function EmpresaDashboard() {
           <div className="bg-white rounded-xl border border-gray-200 p-6">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-semibold text-gray-900">Próximas Entrevistas</h3>
-              <a href="/interviews" className="text-sm text-blue-600 hover:text-blue-800 font-medium">
+              <Link href="/dashboard/empresa/candidates" className="text-sm text-blue-600 hover:text-blue-800 font-medium">
                 Ver todas
-              </a>
+              </Link>
             </div>
 
             <div className="space-y-4">

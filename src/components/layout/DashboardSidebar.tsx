@@ -4,24 +4,25 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   Home, User, MessageCircle, Bell, LogOut, Briefcase, Users, GraduationCap,
-  Building, PieChart, FileText, Calendar, Search, Plus, Sparkles, BookOpen, Bookmark
+  Building, PieChart, FileText, Calendar, Search, Plus, Sparkles, BookOpen, Bookmark, X
 } from 'lucide-react';
 import { useAuth, useLogout } from '@/hooks/useAuth';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface DashboardSidebarProps {
   isVisible: boolean;
+  onClose?: () => void;
 }
 
-export default function DashboardSidebar({ isVisible }: DashboardSidebarProps) {
+export default function DashboardSidebar({ isVisible, onClose }: DashboardSidebarProps) {
   const pathname = usePathname();
   const { user } = useAuth();
   const logoutMutation = useLogout();
-  
+
   // Get the user's role - handle both direct UserProfile and nested structures
-  const userRole = user?.rol || 
-    (user && typeof user === 'object' && 'usuario' in user && user.usuario && typeof user.usuario === 'object' && 'rol' in user.usuario 
-      ? (user.usuario as { rol: string }).rol 
+  const userRole = user?.rol ||
+    (user && typeof user === 'object' && 'usuario' in user && user.usuario && typeof user.usuario === 'object' && 'rol' in user.usuario
+      ? (user.usuario as { rol: string }).rol
       : undefined);
 
   const getNavigationItems = () => {
@@ -161,193 +162,129 @@ export default function DashboardSidebar({ isVisible }: DashboardSidebarProps) {
     return [...baseItems, ...roleSpecificItems];
   };
 
-      const navigationItems = getNavigationItems();
+  const navigationItems = getNavigationItems();
 
-    
+  const handleLogout = () => {
+    logoutMutation.mutate();
+  };
 
-      const handleLogout = () => {
+  const sidebarVariants = {
+    visible: {
+      x: 0,
+      transition: {
+        type: 'spring' as const,
+        stiffness: 300,
+        damping: 30
+      }
+    },
+    hidden: {
+      x: '-100%',
+      transition: {
+        type: 'tween' as const,
+        duration: 0.3
+      }
+    }
+  };
 
-        logoutMutation.mutate();
+  return (
+    <>
+      {/* Mobile Backdrop */}
+      <AnimatePresence>
+        {isVisible && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 0.5 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            className="fixed inset-0 bg-black z-40 lg:hidden"
+          />
+        )}
+      </AnimatePresence>
 
-      };
-
-    
-
-      const sidebarVariants = {
-
-        visible: { 
-
-          x: 0,
-
-          transition: { 
-
-            type: 'spring' as const, 
-
-            stiffness: 300, 
-
-            damping: 30 
-
-          }
-
-        },
-
-        hidden: { 
-
-          x: '-100%',
-
-          transition: { 
-
-            type: 'tween' as const, 
-
-            duration: 0.3 
-
-          }
-
-        }
-
-      };
-
-    
-
-      return (
-        <motion.div 
-          initial="hidden"
-          animate={isVisible ? "visible" : "hidden"}
-          variants={sidebarVariants}
-          className={`
-            fixed left-0 top-0 bottom-0 z-50 
-            w-72 bg-white shadow-2xl border-r border-gray-200 
-
-            overflow-hidden
-
-          `}
-
-        >
-
-          {/* Contenido del sidebar */}
-
-          <div className="flex flex-col h-full overflow-y-auto">
-
-            {/* Logo y título */}
-
-            <div className="flex items-center p-4 border-b border-gray-200">
-
+      <motion.div
+        initial="hidden"
+        animate={isVisible ? "visible" : "hidden"}
+        variants={sidebarVariants}
+        className={`
+          fixed left-0 top-0 bottom-0 z-50 
+          w-72 bg-white shadow-2xl border-r border-gray-200 
+          overflow-hidden
+        `}
+      >
+        {/* Contenido del sidebar */}
+        <div className="flex flex-col h-full overflow-y-auto">
+          {/* Logo y título */}
+          <div className="flex items-center justify-between p-4 border-b border-gray-200">
+            <div className="flex items-center">
               <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg flex items-center justify-center mr-3">
-
                 <Sparkles className="w-5 h-5 text-white" />
-
               </div>
-
               <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent">
-
                 ProTalent
-
               </h1>
-
             </div>
-
-    
-
-            {/* Navegación */}
-
-            <nav className="flex-1 p-2">
-
-              <ul className="space-y-2">
-
-                {navigationItems.map((item) => (
-
-                  <motion.li 
-
-                    key={item.name}
-
-                  >
-
-                    <Link
-
-                      href={item.href}
-
-                      className={`
-
-                        group flex items-center p-3 rounded-lg transition-all duration-300
-
-                        ${item.current 
-
-                          ? 'bg-blue-50 text-blue-600' 
-
-                          : 'hover:bg-gray-100 text-gray-700'}
-
-                      `}
-
-                    >
-
-                      <item.icon 
-
-                        className={`
-
-                          w-5 h-5 mr-3 
-
-                          ${item.current ? 'text-blue-600' : 'text-gray-400 group-hover:text-blue-600'}
-
-                        `} 
-
-                      />
-
-                      <span className="flex-1 truncate">
-
-                        {item.name}
-
-                      </span>
-
-                    </Link>
-
-                  </motion.li>
-
-                ))}
-
-              </ul>
-
-            </nav>
-
-    
-
-            {/* Pie de página del sidebar */}
-
-            <div className="border-t border-gray-200 p-2">
-
-              <motion.button
-
-                onClick={handleLogout}
-
-                whileHover={{ scale: 1.05 }}
-
-                whileTap={{ scale: 0.95 }}
-
-                className={`
-
-                  w-full flex items-center p-3 rounded-lg 
-
-                  text-red-600 hover:bg-red-50 transition-all duration-300
-
-                `}
-
-              >
-
-                <LogOut className="w-5 h-5 mr-3 text-red-500" />
-
-                                <span>
-
-                                  Cerrar Sesión
-
-                                </span>
-
-              </motion.button>
-
-            </div>
-
+            {/* Close button for mobile */}
+            <button
+              onClick={onClose}
+              className="lg:hidden p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500"
+            >
+              <span className="sr-only">Cerrar menú</span>
+              <X className="h-6 w-6" aria-hidden="true" />
+            </button>
           </div>
 
-        </motion.div>
+          {/* Navegación */}
+          <nav className="flex-1 p-2">
+            <ul className="space-y-2">
+              {navigationItems.map((item) => (
+                <motion.li
+                  key={item.name}
+                >
+                  <Link
+                    href={item.href}
+                    onClick={() => {
+                      // Close sidebar on mobile when a link is clicked
+                      if (window.innerWidth < 1024 && onClose) {
+                        onClose();
+                      }
+                    }}
+                    className={`
+                      group flex items-center p-3 rounded-lg transition-all duration-300
+                      ${item.current
+                        ? 'bg-blue-50 text-blue-600'
+                        : 'hover:bg-gray-100 text-gray-700'}
+                    `}
+                  >
+                    <item.icon
+                      className={`
+                        w-5 h-5 mr-3 transition-colors duration-300
+                        ${item.current ? 'text-blue-600' : 'text-gray-400 group-hover:text-blue-600'}
+                      `}
+                    />
+                    <span className="font-medium">{item.name}</span>
+                    {item.badge !== undefined && item.badge > 0 && (
+                      <span className="ml-auto bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                        {item.badge}
+                      </span>
+                    )}
+                  </Link>
+                </motion.li>
+              ))}
+            </ul>
+          </nav>
 
-      );
-
-    }
+          {/* Footer - Logout */}
+          <div className="p-4 border-t border-gray-200">
+            <button
+              onClick={handleLogout}
+              className="flex items-center w-full p-3 text-gray-700 hover:bg-red-50 hover:text-red-600 rounded-lg transition-colors duration-200 group"
+            >
+              <LogOut className="w-5 h-5 mr-3 text-gray-400 group-hover:text-red-600 transition-colors duration-200" />
+              <span className="font-medium">Cerrar Sesión</span>
+            </button>
+          </div>
+        </div>
+      </motion.div>
+    </>
+  );
+}
