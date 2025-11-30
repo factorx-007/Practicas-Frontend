@@ -85,7 +85,7 @@ export default function ChatPage() {
       });
 
       if (response.success && response.data) {
-        const allUsers = response.data.usuarios || [];
+        const allUsers = response.data.data || [];
         const filteredUsers = allUsers.filter(
           (user: Usuario) => user.id !== currentUser?.id
         );

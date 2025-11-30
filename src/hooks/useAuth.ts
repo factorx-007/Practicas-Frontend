@@ -64,7 +64,9 @@ export function useRegister() {
 
       // Use window.location for full page reload to ensure auth state is fresh
       setTimeout(() => {
-        window.location.href = targetPath;
+        if (typeof window !== 'undefined') {
+          window.location.href = targetPath;
+        }
       }, 500);
     },
     onError: (error: Error) => {

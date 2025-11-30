@@ -80,7 +80,7 @@ export interface UserSearchFilters {
 }
 
 export interface UserSearchResponse {
-  usuarios: Usuario[];
+  data: Usuario[];
   pagination: {
     currentPage: number;
     totalPages: number;

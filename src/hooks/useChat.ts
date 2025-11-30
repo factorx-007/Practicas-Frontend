@@ -139,19 +139,7 @@ export const useChat = ({ conversationId }: UseChatProps) => {
     
     // Obtener la instancia del socket
     const socket = socketManager.connect();
-    socket.emit('join_conversation', { conversationId });
-
-    // Cargar mensajes iniciales
-    const loadMessages = async () => {
-      try {
-        const response = await fetch(`/api/conversations/${conversationId}/messages`);
-        const data = await response.json();
-        setMessages(data);
-      } catch (error) {
-        console.error('Error al cargar mensajes:', error);
-      }
-    };
-    loadMessages();
+    socket.emit('join_conversation', conversationId);
 
   }, [connected, conversationId]);
 

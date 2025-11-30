@@ -51,7 +51,7 @@ const UserHighlights: React.FC = () => {
 
       if (response.success && response.data) {
         // The users are in the 'usuarios' property of the response data
-        const allUsers = response.data.usuarios || [];
+        const allUsers = response.data.data || [];
         const filteredUsers = allUsers.filter(
           (user: Usuario) => user.id !== currentUser?.id
         );

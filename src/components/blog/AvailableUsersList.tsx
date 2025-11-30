@@ -84,50 +84,23 @@ const AvailableUsersList: React.FC = () => {
   };
 
   const loadAvailableUsers = useCallback(async () => {
-    console.log('Iniciando carga de usuarios...');
     setLoading(true);
     try {
-      console.log('Realizando petición a getUsersForChat...');
       const response = await UsersService.getUsersForChat({
         limit: 5,
       });
-      console.log('Respuesta de getUsersForChat:', response);
 
-      console.log('API Response for Available Users:', response);
-
-      if (response && response.data) {
-        console.log('Tipo de response.data:', typeof response.data, response.data);
-        
-        let usersData: Usuario[] = [];
-        
-        // Verificar si response.data es un array
-        if (Array.isArray(response.data)) {
-          console.log('response.data es un array');
-          usersData = response.data;
-        } 
-        // Verificar si response.data tiene la propiedad 'data' que es un array
-        else if (response.data && 'data' in response.data && Array.isArray(response.data.data)) {
-          console.log('response.data.data es un array');
-          usersData = response.data.data;
-        }
-        // Verificar si response.data tiene la propiedad 'usuarios'
-        else if (response.data && 'usuarios' in response.data && Array.isArray(response.data.usuarios)) {
-          console.log('response.data.usuarios es un array');
-          usersData = response.data.usuarios;
-        }
-        
-        console.log('API Response Data:', response.data);
-        console.log('Users from API:', usersData);
+      if (response && response.data && Array.isArray(response.data.data)) {
+        const usersData = response.data.data;
         
         // Filtrar el usuario actual
         const filteredUsers = usersData.filter(
-          (userItem: Usuario) => {
-            console.log(`Filtering user ${userItem.id}: current user ID is ${currentUser?.id}`);
-            return userItem.id !== currentUser?.id;
-          }
+          (userItem: Usuario) => userItem.id !== currentUser?.id
         );
-        console.log('Filtered users for display:', filteredUsers);
         setUsers(filteredUsers);
+      } else {
+        // Si la estructura no es la esperada, dejar la lista vacía
+        setUsers([]);
       }
     } catch (error) {
       console.error('Error loading available users:', error);

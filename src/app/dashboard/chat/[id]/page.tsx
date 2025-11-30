@@ -40,7 +40,6 @@ export default function ConversationPage() {
     setMessages,
     typingUsers,
     connected,
-    sendMessage: sendSocketMessage,
     startTyping,
     stopTyping
   } = useChat({ conversationId });
@@ -143,16 +142,9 @@ export default function ConversationPage() {
       });
 
       if (response.success && response.data) {
-        setMessages(prev => [...prev, response.data!]);
+        // La UI se actualizará a través del evento de socket 'new_message'
+        // para evitar duplicados. No es necesario un setMessages aquí.
         stopTyping();
-
-        setTimeout(() => {
-          loadMessages(true);
-        }, 500);
-
-        if (connected) {
-          sendSocketMessage(messageContent);
-        }
       } else {
         toast.error('Error al enviar mensaje');
         setNewMessage(messageContent); // Restore message on error
@@ -164,7 +156,7 @@ export default function ConversationPage() {
     } finally {
       setSending(false);
     }
-  }, [newMessage, sending, setNewMessage, setSending, conversationId, setMessages, stopTyping, loadMessages, connected, sendSocketMessage]);
+  }, [newMessage, sending, setNewMessage, setSending, conversationId, stopTyping]);
 
   const handleKeyPress = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
