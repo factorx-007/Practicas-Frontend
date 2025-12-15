@@ -12,6 +12,8 @@ import {
   CheckCircle
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { api } from '@/lib/api';
+import { API_ENDPOINTS } from '@/constants';
 
 // Tipos para la oferta (basados en estructura real del backend)
 interface OfferQuestion {
@@ -34,16 +36,21 @@ interface Offer {
   };
 }
 
-// Schema de validación mejorado
-const EnhancedApplicationSchema = z.object({
+// Schema factory para validación dinámica
+const createApplicationSchema = (offer: Offer) => z.object({
   // Documentos
   cvFile: z.any().optional(),
-  cvUrl: z.string().url({ message: "URL de CV inválida" }).optional(),
+  cvUrl: z.string().url({ message: "URL de CV inválida" }).optional()
+    .refine((val) => !offer.requiereCV || (val && val.length > 0), {
+      message: "El CV es obligatorio para esta oferta"
+    }),
 
   // Contenido principal
   mensajePresentacion: z.string()
-    .min(50, { message: "El mensaje debe tener al menos 50 caracteres" })
-    .max(1000, { message: "El mensaje no puede superar 1000 caracteres" }),
+    .max(1000, { message: "El mensaje no puede superar 1000 caracteres" })
+    .refine((val) => !offer.requiereCarta || (val && val.length >= 50), {
+      message: "La carta de presentación es obligatoria (mínimo 50 caracteres)"
+    }),
 
   // Campos opcionales
   portfolioUrl: z.string().url({ message: "URL de portfolio inválida" }).optional().or(z.literal("")),
@@ -65,7 +72,7 @@ const EnhancedApplicationSchema = z.object({
   ).optional()
 });
 
-type EnhancedApplicationFormData = z.infer<typeof EnhancedApplicationSchema>;
+type EnhancedApplicationFormData = z.infer<ReturnType<typeof createApplicationSchema>>;
 
 interface Props {
   offer: Offer;
@@ -77,6 +84,8 @@ export default function EnhancedApplicationForm({ offer, onSubmit, onCancel }: P
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
 
+  const schema = createApplicationSchema(offer);
+
   const {
     register,
     handleSubmit,
@@ -84,7 +93,7 @@ export default function EnhancedApplicationForm({ offer, onSubmit, onCancel }: P
     setValue,
     formState: { errors }
   } = useForm<EnhancedApplicationFormData>({
-    resolver: zodResolver(EnhancedApplicationSchema),
+    resolver: zodResolver(schema),
     mode: 'onChange',
     defaultValues: {
       mensajePresentacion: '',
@@ -123,28 +132,25 @@ export default function EnhancedApplicationForm({ offer, onSubmit, onCancel }: P
         return;
       }
 
-      // Upload a Cloudinary
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('upload_preset', 'protalent_cvs'); // Configurar en Cloudinary
+      // Upload al Backend
+      const response = await api.uploadFile<{ cvUrl: string }>(
+        API_ENDPOINTS.USERS.UPLOAD_CV,
+        file,
+        'cv'
+      );
 
-      const response = await fetch(`https://api.cloudinary.com/v1_1/dkioxoqot/auto/upload`, {
-        method: 'POST',
-        body: formData
-      });
-
-      if (!response.ok) {
-        throw new Error('Error al subir archivo');
+      if (response.success && response.data) {
+        setValue('cvUrl', response.data.cvUrl);
+        setUploadedFiles([file]);
+        toast.success('Archivo subido exitosamente');
+      } else {
+        throw new Error(response.message || 'Error al subir archivo');
       }
 
-      const data = await response.json();
-      setValue('cvUrl', data.secure_url);
-      setUploadedFiles([file]);
-      toast.success('Archivo subido exitosamente');
-
-    } catch (error) {
-      console.error('Error uploading file:', error);
-      toast.error('Error al subir el archivo');
+    } catch (error: unknown) {
+      const err = error as Error;
+      console.error('Error uploading file:', err);
+      toast.error(err.message || 'Error al subir el archivo');
     }
   };
 
@@ -168,15 +174,12 @@ export default function EnhancedApplicationForm({ offer, onSubmit, onCancel }: P
     if (isSubmitting) {
       return;
     }
-    
+
     try {
       setIsSubmitting(true);
 
-      // Validar CV obligatorio
-      if (offer.requiereCV && !data.cvUrl) {
-        toast.error('El CV es obligatorio para esta oferta');
-        return;
-      }
+      // Validar CV obligatorio - Ya manejado por el schema
+
 
       // Preparar datos para el backend
       const applicationData = {
@@ -209,9 +212,8 @@ export default function EnhancedApplicationForm({ offer, onSubmit, onCancel }: P
             type="text"
             {...register(`respuestasPersonalizadas.${index}.respuesta`)}
             placeholder="Tu respuesta..."
-            className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-              error ? 'border-red-500' : 'border-gray-300'
-            }`}
+            className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${error ? 'border-red-500' : 'border-gray-300'
+              }`}
           />
         );
 
@@ -221,9 +223,8 @@ export default function EnhancedApplicationForm({ offer, onSubmit, onCancel }: P
             {...register(`respuestasPersonalizadas.${index}.respuesta`)}
             placeholder="Tu respuesta detallada..."
             rows={4}
-            className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-vertical ${
-              error ? 'border-red-500' : 'border-gray-300'
-            }`}
+            className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-vertical ${error ? 'border-red-500' : 'border-gray-300'
+              }`}
           />
         );
 
@@ -233,9 +234,8 @@ export default function EnhancedApplicationForm({ offer, onSubmit, onCancel }: P
             type="number"
             {...register(`respuestasPersonalizadas.${index}.respuesta`)}
             placeholder="Número..."
-            className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-              error ? 'border-red-500' : 'border-gray-300'
-            }`}
+            className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${error ? 'border-red-500' : 'border-gray-300'
+              }`}
           />
         );
 
@@ -243,9 +243,8 @@ export default function EnhancedApplicationForm({ offer, onSubmit, onCancel }: P
         return (
           <select
             {...register(`respuestasPersonalizadas.${index}.respuesta`)}
-            className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-              error ? 'border-red-500' : 'border-gray-300'
-            }`}
+            className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${error ? 'border-red-500' : 'border-gray-300'
+              }`}
           >
             <option value="">Selecciona una opción</option>
             {question.opciones?.map((opcion, optIndex) => (
@@ -260,9 +259,8 @@ export default function EnhancedApplicationForm({ offer, onSubmit, onCancel }: P
             type="email"
             {...register(`respuestasPersonalizadas.${index}.respuesta`)}
             placeholder="correo@ejemplo.com"
-            className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-              error ? 'border-red-500' : 'border-gray-300'
-            }`}
+            className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${error ? 'border-red-500' : 'border-gray-300'
+              }`}
           />
         );
 
@@ -272,9 +270,8 @@ export default function EnhancedApplicationForm({ offer, onSubmit, onCancel }: P
             type="url"
             {...register(`respuestasPersonalizadas.${index}.respuesta`)}
             placeholder="https://ejemplo.com"
-            className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-              error ? 'border-red-500' : 'border-gray-300'
-            }`}
+            className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${error ? 'border-red-500' : 'border-gray-300'
+              }`}
           />
         );
 
@@ -307,11 +304,10 @@ export default function EnhancedApplicationForm({ offer, onSubmit, onCancel }: P
             {uploadedFiles.length === 0 ? (
               <div
                 {...getRootProps()}
-                className={`border-2 border-dashed rounded-lg p-4 lg:p-6 text-center cursor-pointer transition-colors ${
-                  isDragActive
-                    ? 'border-blue-500 bg-blue-50'
-                    : 'border-gray-300 hover:border-blue-400 hover:bg-gray-50'
-                }`}
+                className={`border-2 border-dashed rounded-lg p-4 lg:p-6 text-center cursor-pointer transition-colors ${isDragActive
+                  ? 'border-blue-500 bg-blue-50'
+                  : 'border-gray-300 hover:border-blue-400 hover:bg-gray-50'
+                  }`}
               >
                 <input {...getInputProps()} />
                 <Upload className="w-8 lg:w-10 h-8 lg:h-10 mx-auto text-gray-400 mb-2 lg:mb-3" />
@@ -357,21 +353,20 @@ export default function EnhancedApplicationForm({ offer, onSubmit, onCancel }: P
             <label className="flex items-center text-sm lg:text-base font-semibold text-gray-900">
               <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
               Mensaje de Presentación
-              <span className="text-red-500 ml-1">*</span>
+              {offer.requiereCarta ? <span className="text-red-500 ml-1">*</span> : <span className="text-gray-500 text-xs ml-2">(Opcional)</span>}
             </label>
             <textarea
               {...register('mensajePresentacion')}
               placeholder="Comparte por qué eres el candidato ideal para esta posición. Menciona tu experiencia relevante, motivación y qué puedes aportar..."
               rows={4}
-              className={`w-full px-3 lg:px-4 py-2 lg:py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-vertical text-sm lg:text-base ${
-                errors.mensajePresentacion ? 'border-red-500' : 'border-gray-300'
-              }`}
+              className={`w-full px-3 lg:px-4 py-2 lg:py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-vertical text-sm lg:text-base ${errors.mensajePresentacion ? 'border-red-500' : 'border-gray-300'
+                }`}
             />
             {errors.mensajePresentacion && (
               <p className="text-red-500 text-xs lg:text-sm">{errors.mensajePresentacion.message}</p>
             )}
             <p className="text-xs lg:text-sm text-gray-500">
-              Mínimo 50 caracteres, máximo 1000. Sé específico y profesional.
+              {offer.requiereCarta ? 'Mínimo 50 caracteres, máximo 1000. Sé específico y profesional.' : 'Máximo 1000 caracteres.'}
             </p>
           </div>
 
@@ -386,9 +381,8 @@ export default function EnhancedApplicationForm({ offer, onSubmit, onCancel }: P
               type="text"
               {...register('disponibilidad')}
               placeholder="Ej: Inmediato / 15 enero / 2 semanas"
-              className={`w-full px-3 lg:px-4 py-2 lg:py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm lg:text-base ${
-                errors.disponibilidad ? 'border-red-500' : 'border-gray-300'
-              }`}
+              className={`w-full px-3 lg:px-4 py-2 lg:py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm lg:text-base ${errors.disponibilidad ? 'border-red-500' : 'border-gray-300'
+                }`}
             />
             {errors.disponibilidad && (
               <p className="text-red-500 text-xs lg:text-sm">{errors.disponibilidad.message}</p>
@@ -405,9 +399,8 @@ export default function EnhancedApplicationForm({ offer, onSubmit, onCancel }: P
               type="url"
               {...register('portfolioUrl')}
               placeholder="https://tu-portfolio.com"
-              className={`w-full px-3 lg:px-4 py-2 lg:py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm lg:text-base ${
-                errors.portfolioUrl ? 'border-red-500' : 'border-gray-300'
-              }`}
+              className={`w-full px-3 lg:px-4 py-2 lg:py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm lg:text-base ${errors.portfolioUrl ? 'border-red-500' : 'border-gray-300'
+                }`}
             />
             {errors.portfolioUrl && (
               <p className="text-red-500 text-xs lg:text-sm">{errors.portfolioUrl.message}</p>
@@ -426,9 +419,8 @@ export default function EnhancedApplicationForm({ offer, onSubmit, onCancel }: P
             {...register('motivacion')}
             placeholder="Comparte qué te emociona de esta posición o empresa..."
             rows={3}
-            className={`w-full px-3 lg:px-4 py-2 lg:py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-vertical text-sm lg:text-base ${
-              errors.motivacion ? 'border-red-500' : 'border-gray-300'
-            }`}
+            className={`w-full px-3 lg:px-4 py-2 lg:py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-vertical text-sm lg:text-base ${errors.motivacion ? 'border-red-500' : 'border-gray-300'
+              }`}
           />
           {errors.motivacion && (
             <p className="text-red-500 text-xs lg:text-sm">{errors.motivacion.message}</p>

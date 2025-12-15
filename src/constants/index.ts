@@ -25,6 +25,10 @@ export const API_ENDPOINTS = {
     UPLOAD_AVATAR: '/users/upload/avatar',
     UPLOAD_CV: '/users/upload/cv',
     SEARCH: '/users/search',
+    FOLLOW: (id: string) => `/users/${id}/follow`,
+    UNFOLLOW: (id: string) => `/users/${id}/follow`,
+    FOLLOWERS: (id: string) => `/users/${id}/followers`,
+    FOLLOWING: (id: string) => `/users/${id}/following`,
   },
   OFFERS: {
     BASE: '/offers',

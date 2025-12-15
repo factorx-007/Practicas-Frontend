@@ -5,7 +5,6 @@ import {
   Filter,
   Search,
   MapPin,
-  DollarSign,
   Calendar,
   Briefcase,
   GraduationCap,
@@ -34,11 +33,6 @@ export interface AdvancedFilters {
   nivelEducacion: string[];
   experiencia: string[];
 
-  // Filtros de salario
-  salarioMin: number | null;
-  salarioMax: number | null;
-  soloConSalario: boolean;
-
   // Filtros de fecha
   fechaPublicacion: 'TODO' | 'HOY' | 'SEMANA' | 'MES';
 
@@ -46,7 +40,7 @@ export interface AdvancedFilters {
   habilidades: string[];
 
   // Ordenamiento
-  sortBy: 'relevancia' | 'fechaCreacion' | 'salario' | 'popularidad';
+  sortBy: 'relevancia' | 'fechaCreacion' | 'popularidad';
   sortOrder: 'asc' | 'desc';
 }
 
@@ -119,9 +113,6 @@ export default function AdvancedOfferFilters({
       filters.tipoEmpleo.length > 0 ||
       filters.nivelEducacion.length > 0 ||
       filters.experiencia.length > 0 ||
-      filters.salarioMin !== null ||
-      filters.salarioMax !== null ||
-      filters.soloConSalario ||
       filters.fechaPublicacion !== 'TODO' ||
       filters.habilidades.length > 0
     );
@@ -203,11 +194,10 @@ export default function AdvancedOfferFilters({
                   <button
                     key={modalidad}
                     onClick={() => toggleArrayFilter('modalidad', modalidad)}
-                    className={`px-3 py-2 text-sm rounded-lg border transition-colors ${
-                      filters.modalidad.includes(modalidad)
+                    className={`px-3 py-2 text-sm rounded-lg border transition-colors ${filters.modalidad.includes(modalidad)
                         ? 'bg-blue-100 border-blue-500 text-blue-700'
                         : 'bg-gray-50 border-gray-300 text-gray-600 hover:bg-gray-100'
-                    }`}
+                      }`}
                   >
                     {modalidad}
                   </button>
@@ -225,11 +215,10 @@ export default function AdvancedOfferFilters({
                   <button
                     key={tipo}
                     onClick={() => toggleArrayFilter('tipoEmpleo', tipo)}
-                    className={`px-3 py-2 text-sm rounded-lg border transition-colors ${
-                      filters.tipoEmpleo.includes(tipo)
+                    className={`px-3 py-2 text-sm rounded-lg border transition-colors ${filters.tipoEmpleo.includes(tipo)
                         ? 'bg-green-100 border-green-500 text-green-700'
                         : 'bg-gray-50 border-gray-300 text-gray-600 hover:bg-gray-100'
-                    }`}
+                      }`}
                   >
                     {tipo}
                   </button>
@@ -250,11 +239,10 @@ export default function AdvancedOfferFilters({
                   <button
                     key={nivel}
                     onClick={() => toggleArrayFilter('nivelEducacion', nivel)}
-                    className={`px-3 py-2 text-sm rounded-lg border transition-colors ${
-                      filters.nivelEducacion.includes(nivel)
+                    className={`px-3 py-2 text-sm rounded-lg border transition-colors ${filters.nivelEducacion.includes(nivel)
                         ? 'bg-purple-100 border-purple-500 text-purple-700'
                         : 'bg-gray-50 border-gray-300 text-gray-600 hover:bg-gray-100'
-                    }`}
+                      }`}
                   >
                     {nivel}
                   </button>
@@ -272,49 +260,15 @@ export default function AdvancedOfferFilters({
                   <button
                     key={nivel}
                     onClick={() => toggleArrayFilter('experiencia', nivel)}
-                    className={`px-3 py-2 text-sm rounded-lg border transition-colors ${
-                      filters.experiencia.includes(nivel)
+                    className={`px-3 py-2 text-sm rounded-lg border transition-colors ${filters.experiencia.includes(nivel)
                         ? 'bg-orange-100 border-orange-500 text-orange-700'
                         : 'bg-gray-50 border-gray-300 text-gray-600 hover:bg-gray-100'
-                    }`}
+                      }`}
                   >
                     {nivel}
                   </button>
                 ))}
               </div>
-            </div>
-          </div>
-
-          {/* Rango Salarial */}
-          <div>
-            <label className="flex items-center text-sm font-medium text-gray-700 mb-3">
-              <DollarSign className="w-4 h-4 mr-2" />
-              Rango Salarial (USD)
-            </label>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <input
-                type="number"
-                placeholder="Salario mínimo"
-                value={filters.salarioMin || ''}
-                onChange={(e) => updateFilter('salarioMin', e.target.value ? parseInt(e.target.value) : null)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-              <input
-                type="number"
-                placeholder="Salario máximo"
-                value={filters.salarioMax || ''}
-                onChange={(e) => updateFilter('salarioMax', e.target.value ? parseInt(e.target.value) : null)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-              <label className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  checked={filters.soloConSalario}
-                  onChange={(e) => updateFilter('soloConSalario', e.target.checked)}
-                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                />
-                <span className="text-sm text-gray-700">Solo ofertas con salario</span>
-              </label>
             </div>
           </div>
 
@@ -334,11 +288,10 @@ export default function AdvancedOfferFilters({
                 <button
                   key={option.value}
                   onClick={() => updateFilter('fechaPublicacion', option.value as 'TODO' | 'HOY' | 'SEMANA' | 'MES')}
-                  className={`px-4 py-2 text-sm rounded-lg border transition-colors ${
-                    filters.fechaPublicacion === option.value
+                  className={`px-4 py-2 text-sm rounded-lg border transition-colors ${filters.fechaPublicacion === option.value
                       ? 'bg-indigo-100 border-indigo-500 text-indigo-700'
                       : 'bg-gray-50 border-gray-300 text-gray-600 hover:bg-gray-100'
-                  }`}
+                    }`}
                 >
                   {option.label}
                 </button>
@@ -424,12 +377,11 @@ export default function AdvancedOfferFilters({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <select
                 value={filters.sortBy}
-                onChange={(e) => updateFilter('sortBy', e.target.value as 'relevancia' | 'fechaCreacion' | 'salario' | 'popularidad')}
+                onChange={(e) => updateFilter('sortBy', e.target.value as 'relevancia' | 'fechaCreacion' | 'popularidad')}
                 className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value="relevancia">Relevancia</option>
                 <option value="fechaCreacion">Fecha de publicación</option>
-                <option value="salario">Salario</option>
                 <option value="popularidad">Popularidad</option>
               </select>
 

@@ -1,30 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuthStore } from '@/store/authStore';
-
-// Definir localmente la interfaz para evitar dependencia de @prisma/client
-type TipoContrato = 'TIEMPO_COMPLETO' | 'MEDIO_TIEMPO' | 'POR_HORAS' | 'TEMPORAL' | 'PRACTICAS' | 'FREELANCE';
-
-interface ExperienciaLaboral {
-  id?: string;
-  puesto: string;
-  empresa: string;
-  tipo: TipoContrato;
-  fechaInicio: string;
-  fechaFin?: string | null;
-  descripcion?: string | null;
-  habilidades: string[];
-  trabajoActual?: boolean;
-}
-
-interface StudentProfile {
-  habilidades: string[];
-  experiencia: ExperienciaLaboral[]; // Array de experiencias laborales
-  carrera: string;
-  universidad: string;
-  ubicacion: string;
-  anio_egreso: number;
-  anio_ingreso: number;
-}
+import { api } from '@/lib/api';
+import { API_ENDPOINTS } from '@/constants';
+import { StudentProfile } from '@/types/user';
 
 export interface Offer {
   id: string;
@@ -35,14 +13,14 @@ export interface Offer {
   tipoEmpleo: string;
   nivelEducacion: string;
   experiencia: string;
-  estado: 'ACTIVA' | 'PAUSADA' | 'CERRADA';
+  estado: 'PUBLICADA' | 'CERRADA' | 'BORRADOR';
   createdAt: string;
   fechaLimite?: string | null;
-  salarioMin?: number | null;
-  salarioMax?: number | null;
-  moneda: string;
+  requiereCV: boolean;
+  requiereCarta: boolean;
   requisitos: string[];
   preguntas: {
+    id?: string;
     pregunta: string;
     tipo: string;
     obligatoria: boolean;
@@ -67,7 +45,7 @@ export interface AffinityScore {
     experience: number;
     education: number;
     location: number;
-    salary: number;
+    employment: number;
   };
   missingSkills: string[];
   recommendations: string[];
@@ -76,35 +54,30 @@ export interface AffinityScore {
 export const useOfferAffinity = () => {
   const user = useAuthStore(state => state.user);
   const [studentProfile, setStudentProfile] = useState<StudentProfile | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Obtener perfil del estudiante
-  useEffect(() => {
-    // En una implementación real, esto vendría del backend
-    // Por ahora usamos datos mock basados en la estructura real
-    if (user?.rol === 'ESTUDIANTE' && !studentProfile) {
-      setStudentProfile({
-        habilidades: ['JavaScript', 'React', 'Node.js', 'TypeScript', 'MongoDB'],
-        experiencia: [
-          {
-            id: 'exp1',
-            puesto: 'Desarrollador Frontend',
-            empresa: 'Tech Corp',
-            tipo: 'TIEMPO_COMPLETO',
-            fechaInicio: '2023-01-01',
-            fechaFin: '2024-01-01',
-            habilidades: ['React', 'JavaScript', 'CSS'],
-            trabajoActual: false,
-            descripcion: 'Desarrollo de interfaces de usuario con React y TypeScript'
-          }
-        ],
-        carrera: 'Ingeniería de Sistemas',
-        universidad: 'Universidad Nacional de Trujillo',
-        ubicacion: 'Trujillo',
-        anio_egreso: 2024,
-        anio_ingreso: 2020
-      });
+  const fetchStudentProfile = useCallback(async () => {
+    if (user?.rol !== 'ESTUDIANTE') return;
+
+    try {
+      setIsLoading(true);
+      const response = await api.get<StudentProfile>(API_ENDPOINTS.USERS.PROFILE);
+
+      if (response.success && response.data) {
+        setStudentProfile(response.data as StudentProfile);
+      }
+    } catch (error) {
+      console.error('Error fetching student profile for affinity:', error);
+    } finally {
+      setIsLoading(false);
     }
-  }, [user, studentProfile]);
+  }, [user]);
+
+  useEffect(() => {
+    if (user?.rol === 'ESTUDIANTE' && !studentProfile) {
+      fetchStudentProfile();
+    }
+  }, [user, studentProfile, fetchStudentProfile]);
 
   const calculateAffinity = (offer: Offer): AffinityScore => {
     if (!studentProfile || !offer) {
@@ -112,7 +85,7 @@ export const useOfferAffinity = () => {
         score: 0,
         level: 'BAJO',
         reasons: [],
-        breakdown: { skills: 0, experience: 0, education: 0, location: 0, salary: 0 },
+        breakdown: { skills: 0, experience: 0, education: 0, location: 0, employment: 0 },
         missingSkills: [],
         recommendations: []
       };
@@ -120,13 +93,21 @@ export const useOfferAffinity = () => {
 
     let totalScore = 0;
     const reasons: string[] = [];
-    const breakdown = { skills: 0, experience: 0, education: 0, location: 0, salary: 0 };
+    const breakdown = { skills: 0, experience: 0, education: 0, location: 0, employment: 0 };
     const missingSkills: string[] = [];
     const recommendations: string[] = [];
 
     // 1. ANÁLISIS DE HABILIDADES (40% del score total)
     const offerSkills = extractSkillsFromOffer(offer);
-    const studentSkills = studentProfile.habilidades.map(s => s.toLowerCase());
+
+    // Extraer habilidades del perfil del estudiante (adaptando desde la estructura nueva)
+    const studentSkills = studentProfile.habilidadesNuevas?.map(h => h.habilidad.nombre.toLowerCase()) || [];
+    // También incluir habilidades legacy si existen
+    // @ts-expect-error - Mantener compatibilidad si existen campos legacy
+    if (studentProfile.habilidades) {
+      // @ts-expect-error - Compatibilidad con estructura legacy
+      studentSkills.push(...studentProfile.habilidades.map((s: string) => s.toLowerCase()));
+    }
 
     if (offerSkills.length > 0) {
       const matchingSkills = offerSkills.filter(skill =>
@@ -181,7 +162,7 @@ export const useOfferAffinity = () => {
 
     // 5. ANÁLISIS DE TIPO DE EMPLEO (10% del score total)
     const employmentScore = calculateEmploymentScore();
-    breakdown.salary = employmentScore;
+    breakdown.employment = employmentScore;
     totalScore += employmentScore;
 
     // Determinar nivel
@@ -250,9 +231,23 @@ export const useOfferAffinity = () => {
 
   const calculateExperienceScore = (offer: Offer, profile: StudentProfile): number => {
     // Calcular años de experiencia del estudiante
-    const currentYear = new Date().getFullYear();
-    const graduationYear = profile.anio_egreso;
-    const yearsOfExperience = Math.max(0, currentYear - graduationYear);
+    // Usamos anio_egreso si existe, o calculamos desde la primera experiencia laboral
+    let yearsOfExperience = 0;
+
+    // @ts-expect-error - Compatibilidad con campo legacy
+    if (profile.anio_egreso) {
+      // @ts-expect-error - Compatibilidad con estructura legacy
+      const graduationYear = profile.anio_egreso;
+      const currentYear = new Date().getFullYear();
+      yearsOfExperience = Math.max(0, currentYear - graduationYear);
+    } else if (profile.experiencias && profile.experiencias.length > 0) {
+      // Calcular basado en la experiencia más antigua
+      const startDates = profile.experiencias.map(exp => new Date(exp.fecha_inicio).getTime());
+      const firstJobDate = new Date(Math.min(...startDates));
+      const now = new Date();
+      const diffTime = Math.abs(now.getTime() - firstJobDate.getTime());
+      yearsOfExperience = Math.ceil(diffTime / (1000 * 60 * 60 * 24 * 365));
+    }
 
     // Mapear nivel de experiencia requerido a años
     const experienceMapping = {
@@ -281,7 +276,7 @@ export const useOfferAffinity = () => {
       'POSTGRADO': 4
     };
 
-    // Determinar nivel del estudiante (asumimos universitario por tener carrera)
+    // Determinar nivel del estudiante (asumimos universitario por defecto o si tiene carrera)
     const studentLevel = 3; // Universitario
     const requiredLevel = educationMapping[offer.nivelEducacion as keyof typeof educationMapping] || 2;
 
@@ -300,7 +295,7 @@ export const useOfferAffinity = () => {
     const offerLocation = offer.ubicacion.toLowerCase();
     const studentLocation = profile.ubicacion.toLowerCase();
 
-    // Matching exacto
+    // Matching exacto o parcial
     if (offerLocation.includes(studentLocation) || studentLocation.includes(offerLocation)) {
       return 10;
     }
@@ -316,7 +311,6 @@ export const useOfferAffinity = () => {
 
   const calculateEmploymentScore = (): number => {
     // Por ahora, dar score neutro
-    // En el futuro se podría basar en preferencias del estudiante
     return 5;
   };
 
@@ -332,6 +326,7 @@ export const useOfferAffinity = () => {
   return {
     calculateAffinity,
     sortOffersByAffinity,
-    studentProfile
+    studentProfile,
+    isLoading
   };
 };

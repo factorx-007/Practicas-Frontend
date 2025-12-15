@@ -11,7 +11,6 @@ import {
   X,
   Send,
   FileText,
-  DollarSign,
   Briefcase,
   HelpCircle,
   CheckCircle,
@@ -38,21 +37,21 @@ const CreateOfferSchema = z.object({
 
   modalidad: z.string()
     .refine(
-      (val): val is string => 
+      (val): val is string =>
         Object.values(WORK_MODALITY).includes(val as keyof typeof WORK_MODALITY),
       { message: "Selecciona una modalidad de trabajo válida" }
     ),
 
   tipoEmpleo: z.string()
     .refine(
-      (val): val is string => 
+      (val): val is string =>
         Object.values(OFFER_TYPES).includes(val as keyof typeof OFFER_TYPES),
       { message: "Selecciona un tipo de empleo válido" }
     ),
 
   nivelEducacion: z.string()
     .refine(
-      (val) => ['SECUNDARIA', 'TECNICO', 'UNIVERSITARIO', 'POSTGRADO'].includes(val),
+      (val) => ['PRACTICANTE', 'PASANTE', 'EGRESADO'].includes(val),
       { message: "Selecciona un nivel de educación" }
     ),
 
@@ -70,27 +69,8 @@ const CreateOfferSchema = z.object({
       return !isNaN(date.getTime()) && date > minDate;
     }, { message: "Selecciona una fecha al menos 7 días en el futuro" }),
 
-  salarioMin: z.number()
-    .min(0, "El salario no puede ser negativo")
-    .optional(),
-
-  salarioMax: z.number()
-    .min(0, "El salario no puede ser negativo")
-    .optional(),
-
   requiereCV: z.boolean(),
   requiereCarta: z.boolean()
-}).superRefine((data, ctx) => {
-  // Validación personalizada para asegurar que salarioMax >= salarioMin
-  if (data.salarioMin !== undefined && data.salarioMax !== undefined) {
-    if (data.salarioMax < data.salarioMin) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "El salario máximo debe ser mayor o igual al salario mínimo",
-        path: ['salarioMax']
-      });
-    }
-  }
 });
 
 type CreateOfferFormData = z.infer<typeof CreateOfferSchema>;
@@ -138,13 +118,11 @@ export default function CreateOfferPage() {
     ubicacion: '',
     modalidad: 'PRESENCIAL',
     tipoEmpleo: 'TIEMPO_COMPLETO',
-    nivelEducacion: 'UNIVERSITARIO',
+    nivelEducacion: 'EGRESADO',
     experiencia: 'SIN_EXPERIENCIA',
     fechaLimite: currentDateTime,
     requiereCV: true,
-    requiereCarta: false,
-    salarioMin: undefined,
-    salarioMax: undefined
+    requiereCarta: false
   };
 
   const form = useForm<CreateOfferFormData>({
@@ -230,7 +208,7 @@ export default function CreateOfferPage() {
       console.error('Error al crear oferta:', error);
 
       const apiError = error as ApiResponseError;
-      
+
       if (apiError.response) {
         const { status, data } = apiError.response;
 
@@ -302,9 +280,8 @@ export default function CreateOfferPage() {
             </label>
             <input
               {...register('titulo')}
-              className={`w-full px-3 lg:px-4 py-2 lg:py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm lg:text-base ${
-                errors.titulo ? 'border-red-500' : 'border-gray-300'
-              }`}
+              className={`w-full px-3 lg:px-4 py-2 lg:py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm lg:text-base ${errors.titulo ? 'border-red-500' : 'border-gray-300'
+                }`}
               placeholder="Ej. Desarrollador Full Stack React con experiencia en Node.js"
             />
             {errors.titulo && <p className="text-red-500 text-xs lg:text-sm">{errors.titulo.message}</p>}
@@ -323,9 +300,8 @@ export default function CreateOfferPage() {
             </label>
             <textarea
               {...register('descripcion')}
-              className={`w-full px-3 lg:px-4 py-2 lg:py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-vertical text-sm lg:text-base ${
-                errors.descripcion ? 'border-red-500' : 'border-gray-300'
-              }`}
+              className={`w-full px-3 lg:px-4 py-2 lg:py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-vertical text-sm lg:text-base ${errors.descripcion ? 'border-red-500' : 'border-gray-300'
+                }`}
               rows={6}
               placeholder="Describe en detalle las responsabilidades, tecnologías que se usarán, el contexto del proyecto y lo que buscas en un candidato..."
             />
@@ -368,9 +344,8 @@ export default function CreateOfferPage() {
               <div className="relative">
                 <select
                   {...register('modalidad')}
-                  className={`w-full px-3 lg:px-4 py-2 lg:py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none bg-white text-sm lg:text-base ${
-                    errors.modalidad ? 'border-red-500' : 'border-gray-300'
-                  }`}
+                  className={`w-full px-3 lg:px-4 py-2 lg:py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none bg-white text-sm lg:text-base ${errors.modalidad ? 'border-red-500' : 'border-gray-300'
+                    }`}
                 >
                   <option value="">Selecciona modalidad</option>
                   {Object.values(WORK_MODALITY).map(modalidad => (
@@ -391,9 +366,8 @@ export default function CreateOfferPage() {
               <div className="relative">
                 <select
                   {...register('tipoEmpleo')}
-                  className={`w-full px-3 lg:px-4 py-2 lg:py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none bg-white text-sm lg:text-base ${
-                    errors.tipoEmpleo ? 'border-red-500' : 'border-gray-300'
-                  }`}
+                  className={`w-full px-3 lg:px-4 py-2 lg:py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none bg-white text-sm lg:text-base ${errors.tipoEmpleo ? 'border-red-500' : 'border-gray-300'
+                    }`}
                 >
                   <option value="">Selecciona tipo</option>
                   {Object.values(OFFER_TYPES).map(tipo => (
@@ -414,15 +388,13 @@ export default function CreateOfferPage() {
               <div className="relative">
                 <select
                   {...register('nivelEducacion')}
-                  className={`w-full px-3 lg:px-4 py-2 lg:py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none bg-white text-sm lg:text-base ${
-                    errors.nivelEducacion ? 'border-red-500' : 'border-gray-300'
-                  }`}
+                  className={`w-full px-3 lg:px-4 py-2 lg:py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none bg-white text-sm lg:text-base ${errors.nivelEducacion ? 'border-red-500' : 'border-gray-300'
+                    }`}
                 >
                   <option value="">Selecciona nivel</option>
-                  <option value="SECUNDARIA">Secundaria</option>
-                  <option value="TECNICO">Técnico</option>
-                  <option value="UNIVERSITARIO">Universitario</option>
-                  <option value="POSTGRADO">Postgrado</option>
+                  <option value="PRACTICANTE">Practicante</option>
+                  <option value="PASANTE">Pasante</option>
+                  <option value="EGRESADO">Egresado</option>
                 </select>
               </div>
               {errors.nivelEducacion && <p className="text-red-500 text-xs lg:text-sm">{errors.nivelEducacion.message}</p>}
@@ -438,9 +410,8 @@ export default function CreateOfferPage() {
               <div className="relative">
                 <select
                   {...register('experiencia')}
-                  className={`w-full px-3 lg:px-4 py-2 lg:py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none bg-white text-sm lg:text-base ${
-                    errors.experiencia ? 'border-red-500' : 'border-gray-300'
-                  }`}
+                  className={`w-full px-3 lg:px-4 py-2 lg:py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none bg-white text-sm lg:text-base ${errors.experiencia ? 'border-red-500' : 'border-gray-300'
+                    }`}
                 >
                   <option value="">Selecciona experiencia</option>
                   <option value="SIN_EXPERIENCIA">Sin Experiencia</option>
@@ -464,64 +435,10 @@ export default function CreateOfferPage() {
               type="datetime-local"
               {...register('fechaLimite')}
               min={currentDateTime}
-              className={`w-full px-3 lg:px-4 py-2 lg:py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm lg:text-base ${
-                errors.fechaLimite ? 'border-red-500' : 'border-gray-300'
-              }`}
+              className={`w-full px-3 lg:px-4 py-2 lg:py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm lg:text-base ${errors.fechaLimite ? 'border-red-500' : 'border-gray-300'
+                }`}
             />
             {errors.fechaLimite && <p className="text-red-500 text-xs lg:text-sm">{errors.fechaLimite.message}</p>}
-          </div>
-        </div>
-
-        {/* Compensación */}
-        <div className="bg-white rounded-lg border border-gray-200 p-4 lg:p-6 space-y-4 lg:space-y-6">
-          <div className="flex items-center gap-2 pb-3 border-b border-gray-200">
-            <DollarSign className="w-5 h-5 text-green-600" />
-            <h2 className="text-base lg:text-lg font-semibold text-gray-900">Compensación (Opcional)</h2>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
-            <div className="space-y-2">
-              <label className="flex items-center text-sm lg:text-base font-semibold text-gray-900">
-                <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
-                Salario Mínimo (USD)
-              </label>
-              <input
-                type="number"
-                {...register('salarioMin', { valueAsNumber: true })}
-                className={`w-full px-3 lg:px-4 py-2 lg:py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm lg:text-base ${
-                  errors.salarioMin ? 'border-red-500' : 'border-gray-300'
-                }`}
-                placeholder="1000"
-                min="100"
-                max="50000"
-              />
-              {errors.salarioMin && <p className="text-red-500 text-xs lg:text-sm">{errors.salarioMin.message}</p>}
-            </div>
-
-            <div className="space-y-2">
-              <label className="flex items-center text-sm lg:text-base font-semibold text-gray-900">
-                <div className="w-2 h-2 bg-green-600 rounded-full mr-2"></div>
-                Salario Máximo (USD)
-              </label>
-              <input
-                type="number"
-                {...register('salarioMax', { valueAsNumber: true })}
-                className={`w-full px-3 lg:px-4 py-2 lg:py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm lg:text-base ${
-                  errors.salarioMax ? 'border-red-500' : 'border-gray-300'
-                }`}
-                placeholder="2000"
-                min="100"
-                max="50000"
-              />
-              {errors.salarioMax && <p className="text-red-500 text-xs lg:text-sm">{errors.salarioMax.message}</p>}
-            </div>
-          </div>
-
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-            <div className="flex items-center text-sm text-blue-800">
-              <Lightbulb className="w-4 h-4 mr-2" />
-              <span>Mostrar el rango salarial puede aumentar hasta 30% las postulaciones de calidad</span>
-            </div>
           </div>
         </div>
 
@@ -621,117 +538,165 @@ export default function CreateOfferPage() {
           <div className="flex items-center justify-between pb-3 border-b border-gray-200">
             <div className="flex items-center gap-2">
               <HelpCircle className="w-5 h-5 text-purple-600" />
-              <h2 className="text-base lg:text-lg font-semibold text-gray-900">Preguntas Personalizadas</h2>
+              <div>
+                <h2 className="text-base lg:text-lg font-semibold text-gray-900">Preguntas de Filtrado</h2>
+                <p className="text-sm text-gray-500">Añade preguntas clave para identificar a los mejores candidatos</p>
+              </div>
             </div>
             <button
               type="button"
               onClick={addPregunta}
               disabled={preguntas.length >= 5}
-              className="flex items-center gap-2 px-3 lg:px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm lg:text-base"
+              className="flex items-center gap-2 px-4 py-2 bg-white border border-blue-600 text-blue-600 rounded-full hover:bg-blue-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
             >
               <Plus className="w-4 h-4" />
-              Añadir Pregunta
+              Añadir pregunta
             </button>
           </div>
 
           {preguntas.length === 0 ? (
-            <div className="text-center py-6 text-gray-500">
-              <HelpCircle className="w-8 h-8 mx-auto mb-2 text-gray-400" />
-              <p className="text-sm lg:text-base">No hay preguntas personalizadas</p>
-              <p className="text-xs lg:text-sm">Añade preguntas específicas para conocer mejor a los candidatos</p>
+            <div className="text-center py-8 bg-gray-50 rounded-lg border border-dashed border-gray-300">
+              <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center mx-auto mb-3 shadow-sm">
+                <HelpCircle className="w-6 h-6 text-gray-400" />
+              </div>
+              <h3 className="text-sm font-medium text-gray-900">Sin preguntas adicionales</h3>
+              <p className="text-sm text-gray-500 mt-1">
+                Recomendamos añadir al menos 2 preguntas para filtrar mejor a los candidatos.
+              </p>
+              <button
+                type="button"
+                onClick={addPregunta}
+                className="mt-4 text-sm text-blue-600 font-medium hover:underline"
+              >
+                + Añadir primera pregunta
+              </button>
             </div>
           ) : (
             <div className="space-y-4">
               {preguntas.map((pregunta, index) => (
-                <div key={index} className="border border-gray-200 rounded-lg p-4 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-gray-700">Pregunta {index + 1}</span>
+                <div key={index} className="bg-gray-50 rounded-lg p-4 border border-gray-200 relative group">
+                  <div className="absolute right-4 top-4 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button
                       type="button"
                       onClick={() => removePregunta(index)}
-                      className="text-red-500 hover:bg-red-100 p-1 rounded transition-colors"
+                      className="text-gray-400 hover:text-red-500 p-1 rounded-full hover:bg-white transition-colors"
                     >
-                      <X className="w-4 h-4" />
+                      <X className="w-5 h-5" />
                     </button>
                   </div>
 
-                  <div className="space-y-3">
-                    <input
-                      type="text"
-                      value={pregunta.pregunta}
-                      onChange={(e) => updatePregunta(index, { pregunta: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm lg:text-base"
-                      placeholder="Escribe tu pregunta aquí..."
-                    />
+                  <div className="space-y-4 pr-8">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Pregunta {index + 1}
+                      </label>
+                      <input
+                        type="text"
+                        value={pregunta.pregunta}
+                        onChange={(e) => updatePregunta(index, { pregunta: e.target.value })}
+                        className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                        placeholder="Ej. ¿Cuántos años de experiencia tienes con React?"
+                      />
+                    </div>
 
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-                      <select
-                        value={pregunta.tipo}
-                        onChange={(e) => updatePregunta(index, { tipo: e.target.value as 'TEXT' | 'TEXTAREA' | 'NUMBER' | 'SELECT' | 'EMAIL' | 'URL' })}
-                        className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm lg:text-base"
-                      >
-                        <option value="TEXT">Texto Corto</option>
-                        <option value="TEXTAREA">Texto Largo</option>
-                        <option value="NUMBER">Número</option>
-                        <option value="SELECT">Selección Múltiple</option>
-                        <option value="EMAIL">Correo Electrónico</option>
-                        <option value="URL">URL</option>
-                      </select>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Tipo de respuesta
+                        </label>
+                        <select
+                          value={pregunta.tipo}
+                          onChange={(e) => updatePregunta(index, { tipo: e.target.value as Pregunta['tipo'] })}
+                          className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                        >
+                          <option value="TEXT">Texto corto</option>
+                          <option value="TEXTAREA">Párrafo</option>
+                          <option value="NUMBER">Numérico</option>
+                          <option value="SELECT">Opción múltiple</option>
+                          <option value="EMAIL">Email</option>
+                          <option value="URL">Enlace/URL</option>
+                        </select>
+                      </div>
 
-                      <div className="flex items-center">
-                        <input
-                          type="checkbox"
-                          checked={pregunta.obligatoria}
-                          onChange={(e) => updatePregunta(index, { obligatoria: e.target.checked })}
-                          className="mr-2 w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-                        />
-                        <label className="text-sm lg:text-base text-gray-700">Pregunta obligatoria</label>
+                      <div className="flex items-center h-full pt-6">
+                        <label className="flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={pregunta.obligatoria}
+                            onChange={(e) => updatePregunta(index, { obligatoria: e.target.checked })}
+                            className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                          />
+                          <span className="ml-2 text-sm text-gray-700">Respuesta obligatoria</span>
+                        </label>
                       </div>
                     </div>
 
                     {pregunta.tipo === 'SELECT' && (
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Opciones (separadas por coma)
+                      <div className="bg-white p-3 rounded border border-gray-200 space-y-2">
+                        <label className="block text-sm font-medium text-gray-700">
+                          Opciones de respuesta
                         </label>
-                        <input
-                          type="text"
-                          value={pregunta.opciones?.join(', ') || ''}
-                          onChange={(e) => updatePregunta(index, {
-                            opciones: e.target.value.split(',').map(opt => opt.trim()).filter(opt => opt !== '')
-                          })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm lg:text-base"
-                          placeholder="Opción 1, Opción 2, Opción 3"
-                        />
+                        {pregunta.opciones?.map((opcion, optIndex) => (
+                          <div key={optIndex} className="flex gap-2">
+                            <input
+                              type="text"
+                              value={opcion}
+                              onChange={(e) => {
+                                const newOpciones = [...(pregunta.opciones || [])];
+                                newOpciones[optIndex] = e.target.value;
+                                updatePregunta(index, { opciones: newOpciones });
+                              }}
+                              className="flex-1 px-3 py-1.5 bg-gray-50 border border-gray-300 rounded text-sm"
+                              placeholder={`Opción ${optIndex + 1}`}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const newOpciones = pregunta.opciones?.filter((_, i) => i !== optIndex);
+                                updatePregunta(index, { opciones: newOpciones });
+                              }}
+                              className="text-red-500 hover:bg-red-50 p-1.5 rounded"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                        ))}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const newOpciones = [...(pregunta.opciones || []), ''];
+                            updatePregunta(index, { opciones: newOpciones });
+                          }}
+                          className="text-sm text-blue-600 font-medium hover:underline flex items-center gap-1"
+                        >
+                          <Plus className="w-3 h-3" />
+                          Añadir opción
+                        </button>
                       </div>
                     )}
                   </div>
                 </div>
               ))}
-
-              <div className="text-center text-xs lg:text-sm text-gray-500">
-                {preguntas.length}/5 preguntas personalizadas
-              </div>
             </div>
           )}
         </div>
 
-        {/* Botón de Envío */}
-        <div className="bg-white rounded-lg border border-gray-200 p-4 lg:p-6">
+        {/* Submit Button */}
+        <div className="flex justify-end pt-4">
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full flex items-center justify-center gap-2 px-6 py-3 lg:py-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm lg:text-base font-medium"
+            className="flex items-center gap-2 px-6 lg:px-8 py-2 lg:py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm lg:text-base font-medium shadow-sm hover:shadow-md"
           >
             {isSubmitting ? (
               <>
-                <div className="animate-spin rounded-full h-4 w-4 lg:h-5 lg:w-5 border-b-2 border-white"></div>
-                Publicando oferta...
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                <span>Publicando...</span>
               </>
             ) : (
               <>
-                <Send className="w-4 h-4 lg:w-5 lg:h-5" />
-                Publicar Oferta
+                <Send className="w-5 h-5" />
+                <span>Publicar Oferta</span>
               </>
             )}
           </button>

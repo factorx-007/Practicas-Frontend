@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Briefcase, MapPin, DollarSign, Loader2 } from 'lucide-react';
+import { Briefcase, MapPin, Loader2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { OffersService } from '@/services/offers.service'; // Importar OffersService como clase
+import { offersService } from '@/services/offers.service'; // Importar OffersService como clase
 import { Offer, OfferModalidad } from '@/types/offers.types';
 // Removed unused date-fns imports
 import Image from 'next/image';
@@ -15,7 +15,7 @@ const JobOffersList: React.FC = () => {
   const loadOffers = async () => {
     setLoading(true);
     try {
-      const response = await OffersService.searchOffers({
+      const response = await offersService.searchOffers({
         limit: 3
       }); // Corregido: Llamar al método estático
 
@@ -111,13 +111,6 @@ const JobOffersList: React.FC = () => {
                     <Badge variant="secondary" className={`text-[9px] px-1.5 py-0 h-4 ${getModalidadColor(offer.modalidad)}`}>
                       {offer.modalidad}
                     </Badge>
-                    {(offer.salario_min || offer.salario_max) && (
-                      <div className="flex items-center gap-1">
-                        <DollarSign className="w-3 h-3" />
-                        {offer.salario_min && `$${offer.salario_min.toLocaleString()}`} - 
-                        {offer.salario_max && `$${offer.salario_max.toLocaleString()}`}
-                      </div>
-                    )}
                   </div>
                 </Link>
               </motion.div>

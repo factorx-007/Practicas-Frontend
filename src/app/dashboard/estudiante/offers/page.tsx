@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
 import type { AdvancedFilters } from '@/components/offers/AdvancedOfferFilters';
+import { Briefcase, Sparkles } from 'lucide-react';
 
 import { api } from '@/lib/api';
 import { API_ENDPOINTS } from '@/constants';
@@ -33,11 +34,6 @@ export default function StudentOffersPage() {
     nivelEducacion: [] as string[],
     experiencia: [] as string[],
 
-    // Filtros de salario
-    salarioMin: null as number | null,
-    salarioMax: null as number | null,
-    soloConSalario: false,
-
     // Filtros de fecha
     fechaPublicacion: 'TODO' as 'TODO' | 'HOY' | 'SEMANA' | 'MES',
 
@@ -45,11 +41,9 @@ export default function StudentOffersPage() {
     habilidades: [] as string[],
 
     // Ordenamiento
-    sortBy: 'relevancia' as 'relevancia' | 'fechaCreacion' | 'salario' | 'popularidad',
+    sortBy: 'relevancia' as 'relevancia' | 'fechaCreacion' | 'popularidad',
     sortOrder: 'desc' as 'asc' | 'desc'
   });
-
-  // Removed unused triggerFetch state
 
   type ApplicationPayload = {
     mensaje: string;
@@ -72,7 +66,7 @@ export default function StudentOffersPage() {
         disponibilidad: string;
         respuestasPersonalizadas?: { preguntaId: string; respuesta: string }[];
       };
-      
+
       console.log('Enviando postulación:', formData);
 
       // Transformar al payload esperado por el backend
@@ -144,6 +138,8 @@ export default function StudentOffersPage() {
       id: string;
       titulo?: string;
       descripcion?: string;
+      requiereCV?: boolean;
+      requiereCarta?: boolean;
       preguntas?: {
         id?: string;
         pregunta?: string;
@@ -155,17 +151,19 @@ export default function StudentOffersPage() {
     };
 
     type OfferQuestionType = 'TEXT' | 'NUMBER' | 'SELECT' | 'TEXTAREA' | 'EMAIL' | 'URL';
-    const allowedTipos: ReadonlyArray<OfferQuestionType> = ['TEXT','NUMBER','SELECT','TEXTAREA','EMAIL','URL'] as const;
+    const allowedTipos: ReadonlyArray<OfferQuestionType> = ['TEXT', 'NUMBER', 'SELECT', 'TEXTAREA', 'EMAIL', 'URL'] as const;
     const isOfferQuestionType = (val: string): val is OfferQuestionType => (allowedTipos as readonly string[]).includes(val);
     const converted: MinimalOfferForForm = {
       id: offer.id,
       titulo: offer.titulo,
       descripcion: offer.descripcion,
+      requiereCV: offer.requiereCV,
+      requiereCarta: offer.requiereCarta,
       empresa: offer.empresa ? { nombre_empresa: offer.empresa.nombre_empresa } : undefined,
       preguntas: offer.preguntas?.map((q) => {
         const tipo = typeof q.tipo === 'string' && isOfferQuestionType(q.tipo) ? q.tipo : undefined;
         return {
-          id: undefined,
+          id: q.id,
           pregunta: q.pregunta,
           tipo,
           obligatoria: q.obligatoria,
@@ -205,9 +203,6 @@ export default function StudentOffersPage() {
       tipoEmpleo: [],
       nivelEducacion: [],
       experiencia: [],
-      salarioMin: null,
-      salarioMax: null,
-      soloConSalario: false,
       fechaPublicacion: 'TODO',
       habilidades: [],
       sortBy: 'relevancia',
@@ -224,9 +219,6 @@ export default function StudentOffersPage() {
       tipoEmpleo: advancedFilters.tipoEmpleo,
       nivelEducacion: advancedFilters.nivelEducacion,
       experiencia: advancedFilters.experiencia,
-      salarioMin: advancedFilters.salarioMin ? Number(advancedFilters.salarioMin) : null,
-      salarioMax: advancedFilters.salarioMax ? Number(advancedFilters.salarioMax) : null,
-      soloConSalario: advancedFilters.soloConSalario || false,
       habilidades: advancedFilters.habilidades,
       fechaPublicacion: advancedFilters.fechaPublicacion,
       sortBy: advancedFilters.sortBy,
@@ -235,31 +227,46 @@ export default function StudentOffersPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
       {/* Header */}
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-gray-900">Ofertas de Trabajo</h1>
-        <div className="text-sm text-gray-500">
-          Encuentra tu próxima oportunidad profesional
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-gray-200 pb-6">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
+            <Briefcase className="w-8 h-8 text-blue-600" />
+            Ofertas de Trabajo
+          </h1>
+          <p className="mt-2 text-gray-500 flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-yellow-500" />
+            Encuentra tu próxima oportunidad profesional ideal
+          </p>
+        </div>
+        <div className="hidden md:block">
+          <div className="bg-blue-50 text-blue-700 px-4 py-2 rounded-lg text-sm font-medium border border-blue-100">
+            Explora cientos de oportunidades
+          </div>
         </div>
       </div>
 
       {/* Filtros Avanzados */}
-      <AdvancedOfferFilters
-        filters={advancedFilters}
-        onFiltersChange={handleAdvancedFiltersChange}
-        onClearFilters={clearAllFilters}
-      />
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-1">
+        <AdvancedOfferFilters
+          filters={advancedFilters}
+          onFiltersChange={handleAdvancedFiltersChange}
+          onClearFilters={clearAllFilters}
+        />
+      </div>
 
       {/* Lista de Ofertas */}
-      <OffersList
-        apiEndpoint={API_ENDPOINTS.OFFERS.SEARCH}
-        headerTitle="Resultados de Búsqueda"
-        headerSubtitle="Explora y postúlate a las mejores oportunidades laborales"
-        renderExpandedDetails={renderApplicationForm}
-        filters={convertToSimpleFilters()}
-        onFiltersChange={handleAdvancedFiltersChange}
-      />
+      <div className="mt-8">
+        <OffersList
+          apiEndpoint={API_ENDPOINTS.OFFERS.SEARCH}
+          headerTitle="Resultados de Búsqueda"
+          headerSubtitle="Explora y postúlate a las mejores oportunidades laborales"
+          renderExpandedDetails={renderApplicationForm}
+          filters={convertToSimpleFilters()}
+          onFiltersChange={handleAdvancedFiltersChange}
+        />
+      </div>
     </div>
   );
 }

@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 import { mockDashboardStats, upcomingEvents } from '@/data/dashboard';
 import { useQuery } from '@tanstack/react-query';
-import { OffersService } from '@/services/offers.service';
+import { offersService } from '@/services/offers.service';
 import { notificationsService, Notification } from '@/services/notifications.service';
 import Link from 'next/link';
 
@@ -131,7 +131,7 @@ export default function EmpresaDashboard() {
 
   const { data: statsResponse, isLoading: isLoadingStats } = useQuery({
     queryKey: ['companyStats'],
-    queryFn: () => OffersService.getCompanyStats(),
+    queryFn: () => offersService.getCompanyStats(),
     enabled: !!user && user.rol === 'EMPRESA'
   });
 

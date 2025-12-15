@@ -81,7 +81,13 @@ export default function OffersList({
   const [showAffinityScores, setShowAffinityScores] = useState(true);
 
   const user = useAuthStore(state => state.user);
-  const { sortOffersByAffinity, calculateAffinity } = useOfferAffinity();
+  const { sortOffersByAffinity, calculateAffinity, studentProfile } = useOfferAffinity();
+
+  useEffect(() => {
+    if (studentProfile && offers.length > 0 && user?.rol === 'ESTUDIANTE' && showAffinityScores) {
+      setOffers(prevOffers => sortOffersByAffinity(prevOffers));
+    }
+  }, [studentProfile, sortOffersByAffinity, user?.rol, showAffinityScores]);
 
   const [filters, setFilters] = useState<AdvancedFilters>({
     search: '',
@@ -90,9 +96,6 @@ export default function OffersList({
     tipoEmpleo: [],
     nivelEducacion: [],
     experiencia: [],
-    salarioMin: null,
-    salarioMax: null,
-    soloConSalario: false,
     fechaPublicacion: 'TODO',
     habilidades: [],
     sortBy: 'fechaCreacion',
@@ -106,7 +109,7 @@ export default function OffersList({
       console.log('Skipping fetch - already fetching');
       return;
     }
-    
+
     try {
       setIsFetching(true);
       // Only set loading to true for initial page loads, not for pagination
@@ -155,12 +158,11 @@ export default function OffersList({
           tipoEmpleo: offer.tipoEmpleo || 'No especificado',
           nivelEducacion: offer.nivelEducacion || 'No especificado',
           experiencia: offer.experiencia || 'No especificada',
-          estado: offer.estado || 'No especificado',
+          estado: (offer.estado as 'PUBLICADA' | 'CERRADA' | 'BORRADOR') || 'BORRADOR',
           createdAt: offer.createdAt || 'Fecha no especificada',
           fechaLimite: offer.fechaLimite || null,
-          salarioMin: offer.salarioMin || null,
-          salarioMax: offer.salarioMax || null,
-          moneda: offer.moneda || 'USD',
+          requiereCV: offer.requiereCV || false,
+          requiereCarta: offer.requiereCarta || false,
           requisitos: offer.requisitos || [],
           preguntas: offer.preguntas || [],
           empresa: offer.empresa || { nombre_empresa: 'Empresa desconocida' },
@@ -451,7 +453,7 @@ export default function OffersList({
                               Descripción
                             </h4>
                             <div className="bg-gray-50 rounded-lg p-3 lg:p-4">
-                              <p className="text-gray-700 leading-relaxed text-sm lg:text-base">
+                              <p className="text-gray-700 leading-relaxed text-sm lg:text-base whitespace-pre-wrap break-words">
                                 {offer.descripcion || 'Sin descripción'}
                               </p>
                             </div>
@@ -488,14 +490,7 @@ export default function OffersList({
                                     {offer.experiencia || 'No especificada'}
                                   </span>
                                 </div>
-                                {(offer.salarioMin || offer.salarioMax) && (
-                                  <div className="flex items-center justify-between py-1">
-                                    <span className="text-gray-600 font-medium">Salario:</span>
-                                    <span className="text-gray-900 bg-white px-2 py-1 rounded text-xs font-semibold">
-                                      {offer.moneda || 'USD'} {offer.salarioMin} - {offer.salarioMax}
-                                    </span>
-                                  </div>
-                                )}
+
                                 {offer.fechaLimite && (
                                   <div className="flex items-center justify-between py-1">
                                     <span className="text-gray-600 font-medium">Fecha límite:</span>

@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { OffersService } from '@/services/offers.service'; // Importar OffersService como clase y offersService como instancia
+import { offersService } from '@/services/offers.service'; // Importar OffersService como clase y offersService como instancia
 import { OfferWithDetails } from '@/types/offers.types';
 import { toast } from 'sonner';
-import { Loader2, Building, MapPin, DollarSign, Calendar, Clock, ChevronLeft } from 'lucide-react';
+import { Loader2, Building, MapPin, Calendar, Clock, ChevronLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import Image from 'next/image';
@@ -26,7 +26,7 @@ export default function OfferDetailPage() {
       if (!offerId) return;
       setIsLoading(true);
       try {
-        const response = await OffersService.getOfferById(offerId); // Corregido: Llamada estática
+        const response = await offersService.getOfferById(offerId); // Corregido: Llamada estática
         if (response.success && response.data) {
           setOffer(response.data);
         } else {
@@ -57,7 +57,7 @@ export default function OfferDetailPage() {
   const handleApply = async () => {
     setIsApplying(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1500)); 
+      await new Promise(resolve => setTimeout(resolve, 1500));
       toast.success('¡Te has postulado a esta oferta exitosamente!');
     } catch (error) {
       console.error('Error applying to offer:', error);
@@ -133,22 +133,14 @@ export default function OfferDetailPage() {
               {offer.modalidad}
             </Badge>
           </p>
-          <p className="flex items-center gap-2">
-            <DollarSign className="w-5 h-5 text-green-500" />
-            <span className="font-semibold">Salario:</span> 
-            {offer.salario_min || offer.salario_max ? (
-              `$${offer.salario_min?.toLocaleString() || ''} - $${offer.salario_max?.toLocaleString() || ''}`
-            ) : (
-              'No especificado'
-            )}
-          </p>
+
           <p className="flex items-center gap-2">
             <Clock className="w-5 h-5 text-orange-500" />
             <span className="font-semibold">Experiencia:</span> {offer.experiencia_minima || 'No especificada'}
           </p>
           <p className="flex items-center gap-2">
             <Calendar className="w-5 h-5 text-purple-500" />
-            <span className="font-semibold">Fecha Límite:</span> 
+            <span className="font-semibold">Fecha Límite:</span>
             {format(new Date(offer.fecha_limite), 'dd MMMM yyyy', { locale: es })}
           </p>
         </div>
@@ -187,9 +179,9 @@ export default function OfferDetailPage() {
 
         {/* Botón de postulación */}
         <div className="text-center mt-8">
-          <Button 
-            onClick={handleApply} 
-            disabled={isApplying} 
+          <Button
+            onClick={handleApply}
+            disabled={isApplying}
             className="w-full md:w-auto px-8 py-3 text-lg font-semibold"
           >
             {isApplying ? (

@@ -24,23 +24,35 @@ export interface CompanyInfoForOffer {
   rubro?: string; // Añadir la propiedad rubro
 }
 
+export interface OfferQuestion {
+  id?: string;
+  pregunta: string;
+  tipo: 'TEXT' | 'NUMBER' | 'SELECT' | 'TEXTAREA' | 'EMAIL' | 'URL';
+  obligatoria: boolean;
+  opciones?: string[];
+}
+
 export interface Offer {
   id: string;
   titulo: string;
   descripcion: string;
   ubicacion: string;
   modalidad: OfferModalidad;
-  salario_min?: number;
-  salario_max?: number;
-  fecha_limite: string; // Usar string para fechas para simplificar, o Date si se maneja en frontend
+  tipoEmpleo: string;
+  nivelEducacion: string;
+  experiencia: string;
+  fecha_limite: string;
   empresaId: string;
   estado: OfferEstado;
   createdAt: string;
   updatedAt: string;
   vistas?: number;
+  requiereCV: boolean;
+  requiereCarta: boolean;
+  preguntas?: OfferQuestion[];
 
-  empresa: CompanyInfoForOffer; // Relación con la empresa
-  _count?: { // Para el conteo de postulaciones si es necesario
+  empresa: CompanyInfoForOffer;
+  _count?: {
     postulaciones: number;
   };
 }
@@ -55,9 +67,7 @@ export interface OfferWithDetails extends Offer {
 export interface OfferSearchFilters {
   search?: string;
   modalidad?: OfferModalidad;
-  experiencia?: string; // Podría ser un enum o string libre
-  salarioMin?: number;
-  salarioMax?: number;
+  experiencia?: string;
   ubicacion?: string;
   empresaId?: string;
   page?: number;
@@ -81,4 +91,53 @@ export interface CompanyStats {
   postulaciones_recibidas: number;
   candidatos_entrevistados: number;
   rating_empresa: number;
+}
+
+export enum ApplicationStatus {
+  PENDIENTE = 'PENDIENTE',
+  EN_REVISION = 'EN_REVISION',
+  ENTREVISTA = 'ENTREVISTA',
+  ACEPTADA = 'ACEPTADA',
+  RECHAZADA = 'RECHAZADA',
+}
+
+export interface Application {
+  id: string;
+  ofertaId: string;
+  estudianteId: string;
+  estado: ApplicationStatus;
+  fecha_postulacion: string;
+  mensaje?: string;
+  cvUrl?: string;
+  notasEntrevistador?: string;
+
+  estudiante?: {
+    id: string;
+    usuario: {
+      nombre: string;
+      email: string;
+      foto_perfil?: string;
+    };
+    carrera?: string;
+    universidad?: string;
+  };
+
+  oferta?: {
+    id: string;
+    titulo: string;
+    ubicacion: string;
+    modalidad: OfferModalidad;
+  };
+}
+
+export interface PaginatedCandidatesResponse {
+  data: Application[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+    hasNext: boolean;
+    hasPrev: boolean;
+  };
 }
